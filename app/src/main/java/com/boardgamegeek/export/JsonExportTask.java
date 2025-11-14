@@ -4,13 +4,13 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.database.Cursor;
 import android.net.Uri;
-import android.os.AsyncTask;
 import android.os.ParcelFileDescriptor;
 
 import com.boardgamegeek.R;
 import com.boardgamegeek.events.ExportFinishedEvent;
 import com.boardgamegeek.events.ExportProgressEvent;
 import com.boardgamegeek.export.model.Model;
+import com.boardgamegeek.extensions.AsyncTaskKt;
 import com.boardgamegeek.util.FileUtils;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -27,15 +27,14 @@ import java.io.OutputStreamWriter;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import kotlin.Unit;
 import timber.log.Timber;
 
-public abstract class JsonExportTask<T extends Model> extends AsyncTask<Void, Integer, String> {
-	private static final int PROGRESS_TOTAL = 0;
-	private static final int PROGRESS_CURRENT = 1;
-
+public abstract class JsonExportTask<T extends Model> {
 	@SuppressLint("StaticFieldLeak") @Nullable private final Context context;
 	private final String type;
 	private final Uri uri;
+	private volatile boolean cancelled = false;
 
 	public JsonExportTask(@Nullable Context context, String type, Uri uri) {
 		this.context = context == null ? null : context.getApplicationContext();
@@ -51,8 +50,17 @@ public abstract class JsonExportTask<T extends Model> extends AsyncTask<Void, In
 
 	protected abstract void writeJsonRecord(Context context, Cursor cursor, Gson gson, JsonWriter writer);
 
-	@Override
-	protected String doInBackground(Void... params) {
+	public void execute() {
+		AsyncTaskKt.launchTaskWithResult(
+			() -> doInBackground(),
+			result -> {
+				onPostExecute(result);
+				return Unit.INSTANCE;
+			}
+		);
+	}
+
+	protected String doInBackground() {
 		if (context == null) return "Error.";
 
 		if (uri == null) {
@@ -119,18 +127,24 @@ public abstract class JsonExportTask<T extends Model> extends AsyncTask<Void, In
 		return null;
 	}
 
-	@Override
-	protected void onProgressUpdate(Integer... values) {
-		EventBus.getDefault().post(new ExportProgressEvent(
-			values[PROGRESS_TOTAL],
-			values[PROGRESS_CURRENT],
-			type));
+	protected void publishProgress(int total, int current) {
+		// Post progress on main thread using Handler
+		new android.os.Handler(android.os.Looper.getMainLooper()).post(() -> {
+			EventBus.getDefault().post(new ExportProgressEvent(total, current, type));
+		});
 	}
 
-	@Override
 	protected void onPostExecute(String errorMessage) {
 		Timber.i(errorMessage);
 		EventBus.getDefault().post(new ExportFinishedEvent(type, errorMessage));
+	}
+
+	public void cancel() {
+		cancelled = true;
+	}
+
+	protected boolean isCancelled() {
+		return cancelled;
 	}
 
 	private void writeJsonStream(@NonNull OutputStream out, @NonNull Cursor cursor) throws IOException {

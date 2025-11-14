@@ -8,7 +8,6 @@ import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.content.Context;
 import android.content.Intent;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.KeyEvent;
@@ -44,7 +43,7 @@ public class LoginActivity extends AccountAuthenticatorActivity {
 
 	private ActivityLoginBinding binding;
 
-	private UserLoginTask userLoginTask = null;
+	private boolean isLoggingIn = false;
 	private AccountManager accountManager;
 	private boolean isRequestingNewAccount;
 
@@ -144,9 +143,26 @@ public class LoginActivity extends AccountAuthenticatorActivity {
 			// Show a progress spinner, and kick off a background task to perform the user login attempt.
 			binding.loginStatusMessage.setText(R.string.login_progress_signing_in);
 			showProgress(true);
-			userLoginTask = new UserLoginTask();
-			TaskUtils.executeAsyncTask(userLoginTask);
+			performLogin();
 		}
+	}
+
+	private void performLogin() {
+		isLoggingIn = true;
+		TaskUtils.launchTaskWithResult(
+			() -> NetworkAuthenticator.authenticate(username, password, "Dialog"),
+			bggCookieJar -> {
+				isLoggingIn = false;
+				showProgress(false);
+				
+				if (bggCookieJar != null) {
+					createAccount(bggCookieJar);
+				} else {
+					binding.passwordContainer.setError(getString(R.string.error_incorrect_password));
+					binding.password.requestFocus();
+				}
+			}
+		);
 	}
 
 	/**
@@ -174,34 +190,7 @@ public class LoginActivity extends AccountAuthenticatorActivity {
 			});
 	}
 
-	/**
-	 * Represents an asynchronous login/registration task used to authenticate the user.
-	 */
-	public class UserLoginTask extends AsyncTask<Void, Void, BggCookieJar> {
-		@Override
-		protected BggCookieJar doInBackground(Void... params) {
-			return NetworkAuthenticator.authenticate(username, password, "Dialog");
-		}
 
-		@Override
-		protected void onPostExecute(BggCookieJar bggCookieJar) {
-			userLoginTask = null;
-			showProgress(false);
-
-			if (bggCookieJar != null) {
-				createAccount(bggCookieJar);
-			} else {
-				binding.passwordContainer.setError(getString(R.string.error_incorrect_password));
-				binding.password.requestFocus();
-			}
-		}
-
-		@Override
-		protected void onCancelled() {
-			userLoginTask = null;
-			showProgress(false);
-		}
-	}
 
 	private void createAccount(BggCookieJar bggCookieJar) {
 		Timber.i("Creating account");

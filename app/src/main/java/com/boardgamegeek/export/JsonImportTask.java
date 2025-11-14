@@ -3,13 +3,13 @@ package com.boardgamegeek.export;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.net.Uri;
-import android.os.AsyncTask;
 import android.os.ParcelFileDescriptor;
 
 import com.boardgamegeek.R;
 import com.boardgamegeek.events.ImportFinishedEvent;
 import com.boardgamegeek.events.ImportProgressEvent;
 import com.boardgamegeek.export.model.Model;
+import com.boardgamegeek.extensions.AsyncTaskKt;
 import com.boardgamegeek.util.FileUtils;
 import com.google.gson.Gson;
 import com.google.gson.stream.JsonReader;
@@ -26,16 +26,15 @@ import java.util.ArrayList;
 import java.util.List;
 
 import androidx.annotation.Nullable;
+import kotlin.Unit;
 import timber.log.Timber;
 
-public abstract class JsonImportTask<T extends Model> extends AsyncTask<Void, Integer, String> {
-	private static final int PROGRESS_TOTAL = 0;
-	private static final int PROGRESS_CURRENT = 1;
-
+public abstract class JsonImportTask<T extends Model> {
 	@SuppressLint("StaticFieldLeak") @Nullable protected final Context context;
 	private final String type;
 	private final Uri uri;
 	private final List<T> items;
+	private volatile boolean cancelled = false;
 
 	public JsonImportTask(@Nullable Context context, String type, Uri uri) {
 		this.context = context == null ? null : context.getApplicationContext();
@@ -51,8 +50,17 @@ public abstract class JsonImportTask<T extends Model> extends AsyncTask<Void, In
 
 	protected abstract void importRecord(T item, int version);
 
-	@Override
-	protected String doInBackground(Void... params) {
+	public void execute() {
+		AsyncTaskKt.launchTaskWithResult(
+			() -> doInBackground(),
+			result -> {
+				onPostExecute(result);
+				return Unit.INSTANCE;
+			}
+		);
+	}
+
+	protected String doInBackground() {
 		if (context == null) return "Error.";
 
 		FileInputStream in;
@@ -158,17 +166,23 @@ public abstract class JsonImportTask<T extends Model> extends AsyncTask<Void, In
 		reader.endArray();
 	}
 
-	@Override
-	protected void onProgressUpdate(Integer... values) {
-		EventBus.getDefault().post(new ImportProgressEvent(
-			values[PROGRESS_TOTAL],
-			values[PROGRESS_CURRENT],
-			type));
+	protected void publishProgress(int total, int current) {
+		// Post progress on main thread using Handler
+		new android.os.Handler(android.os.Looper.getMainLooper()).post(() -> {
+			EventBus.getDefault().post(new ImportProgressEvent(total, current, type));
+		});
 	}
 
-	@Override
 	protected void onPostExecute(String errorMessage) {
 		Timber.i(errorMessage);
 		EventBus.getDefault().post(new ImportFinishedEvent(type, errorMessage));
+	}
+
+	public void cancel() {
+		cancelled = true;
+	}
+
+	protected boolean isCancelled() {
+		return cancelled;
 	}
 }

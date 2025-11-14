@@ -9,7 +9,6 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.RectF;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.ActionMode;
@@ -212,10 +211,49 @@ public class ColorsFragment extends Fragment implements LoaderCallbacks<Cursor> 
 	public boolean onOptionsItemSelected(@NonNull MenuItem item) {
 		switch (item.getItemId()) {
 			case R.id.menu_colors_generate:
-				TaskUtils.executeAsyncTask(new Task());
+				generateColors();
 				return true;
 		}
 		return super.onOptionsItemSelected(item);
+	}
+
+	private void generateColors() {
+		TaskUtils.launchTaskWithResult(
+			() -> {
+				Integer count = 0;
+				Cursor cursor = null;
+				try {
+					cursor = getActivity().getContentResolver().query(Plays.buildPlayersByColor(),
+						new String[] { PlayPlayers.COLOR }, Plays.OBJECT_ID + "=?",
+						new String[] { String.valueOf(gameId) }, null);
+					if (cursor != null && cursor.moveToFirst()) {
+						List<ContentValues> values = new ArrayList<>();
+						do {
+							String color = cursor.getString(0);
+							if (!TextUtils.isEmpty(color)) {
+								ContentValues cv = new ContentValues();
+								cv.put(GameColors.COLOR, color);
+								values.add(cv);
+							}
+						} while (cursor.moveToNext());
+						if (values.size() > 0) {
+							ContentValues[] array = {};
+							count = getActivity().getContentResolver().bulkInsert(Games.buildColorsUri(gameId), values.toArray(array));
+						}
+					}
+				} finally {
+					if (cursor != null) {
+						cursor.close();
+					}
+				}
+				return count;
+			},
+			result -> {
+				if (result > 0) {
+					Snackbar.make(containerView, R.string.msg_colors_generated, Snackbar.LENGTH_SHORT).show();
+				}
+			}
+		);
 	}
 
 	@NonNull
@@ -334,45 +372,5 @@ public class ColorsFragment extends Fragment implements LoaderCallbacks<Cursor> 
 		ContentValues values = new ContentValues();
 		values.put(GameColors.COLOR, color);
 		getActivity().getContentResolver().insert(Games.buildColorsUri(gameId), values);
-	}
-
-	private class Task extends AsyncTask<Void, Void, Integer> {
-		@Override
-		protected Integer doInBackground(Void... params) {
-			Integer count = 0;
-			Cursor cursor = null;
-			try {
-				cursor = getActivity().getContentResolver().query(Plays.buildPlayersByColor(),
-					new String[] { PlayPlayers.COLOR }, Plays.OBJECT_ID + "=?",
-					new String[] { String.valueOf(gameId) }, null);
-				if (cursor != null && cursor.moveToFirst()) {
-					List<ContentValues> values = new ArrayList<>();
-					do {
-						String color = cursor.getString(0);
-						if (!TextUtils.isEmpty(color)) {
-							ContentValues cv = new ContentValues();
-							cv.put(GameColors.COLOR, color);
-							values.add(cv);
-						}
-					} while (cursor.moveToNext());
-					if (values.size() > 0) {
-						ContentValues[] array = {};
-						count = getActivity().getContentResolver().bulkInsert(Games.buildColorsUri(gameId), values.toArray(array));
-					}
-				}
-			} finally {
-				if (cursor != null) {
-					cursor.close();
-				}
-			}
-			return count;
-		}
-
-		@Override
-		protected void onPostExecute(Integer result) {
-			if (result > 0) {
-				Snackbar.make(containerView, R.string.msg_colors_generated, Snackbar.LENGTH_SHORT).show();
-			}
-		}
 	}
 }

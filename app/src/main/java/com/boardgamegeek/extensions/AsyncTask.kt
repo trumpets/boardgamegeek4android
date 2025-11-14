@@ -113,3 +113,17 @@ fun <T> launchTaskWithLifecycle(
     }
 }
 
+/**
+ * Helper function to post a callback on the main thread from a background coroutine.
+ * This is useful for publishing progress updates from background work.
+ */
+suspend fun runOnMainThread(block: () -> Unit) {
+    withContext(Dispatchers.Main) {
+        try {
+            block()
+        } catch (e: Exception) {
+            timber.log.Timber.e(e, "Error in main thread callback")
+        }
+    }
+}
+

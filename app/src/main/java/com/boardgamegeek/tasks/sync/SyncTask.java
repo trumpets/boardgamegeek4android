@@ -2,9 +2,9 @@ package com.boardgamegeek.tasks.sync;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
-import android.os.AsyncTask;
 
 import com.boardgamegeek.R;
+import com.boardgamegeek.extensions.AsyncTaskKt;
 import com.boardgamegeek.extensions.IntUtils;
 import com.boardgamegeek.extensions.NetworkUtils;
 import com.boardgamegeek.io.Adapter;
@@ -16,24 +16,35 @@ import org.greenrobot.eventbus.EventBus;
 
 import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
+import kotlin.Unit;
 import retrofit2.Call;
 import retrofit2.Response;
 import timber.log.Timber;
 
-public abstract class SyncTask<T, E extends CompletedEvent> extends AsyncTask<Void, Void, String> {
+public abstract class SyncTask<T, E extends CompletedEvent> {
 	@SuppressLint("StaticFieldLeak") @Nullable protected final Context context;
 	protected final long startTime;
 	protected BggService bggService;
 	private Call<T> call;
 	private int page = 1;
+	private volatile boolean cancelled = false;
 
 	SyncTask(@Nullable Context context) {
 		this.context = context == null ? null : context.getApplicationContext();
 		startTime = System.currentTimeMillis();
 	}
 
-	@Override
-	protected String doInBackground(Void... params) {
+	public void execute() {
+		AsyncTaskKt.launchTaskWithResult(
+			() -> doInBackground(),
+			result -> {
+				onPostExecute(result);
+				return Unit.INSTANCE;
+			}
+		);
+	}
+
+	protected String doInBackground() {
 		if (context == null) return "Error.";
 		bggService = createService();
 		if (!isRequestParamsValid())
@@ -70,15 +81,18 @@ public abstract class SyncTask<T, E extends CompletedEvent> extends AsyncTask<Vo
 		return "";
 	}
 
-	@Override
 	protected void onPostExecute(String errorMessage) {
 		Timber.w(errorMessage);
 		EventBus.getDefault().post(createEvent(errorMessage));
 	}
 
-	@Override
-	protected void onCancelled() {
+	public void cancel() {
+		cancelled = true;
 		if (call != null) call.cancel();
+	}
+
+	protected boolean isCancelled() {
+		return cancelled;
 	}
 
 	protected int getCurrentPage() {
