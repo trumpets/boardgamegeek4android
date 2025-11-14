@@ -9,7 +9,6 @@ import androidx.lifecycle.map
 import com.boardgamegeek.db.PlayDao
 import com.boardgamegeek.entities.PlayEntity
 import com.boardgamegeek.entities.RefreshableResource
-import com.boardgamegeek.extensions.executeAsyncTask
 import com.boardgamegeek.extensions.isOlderThan
 import com.boardgamegeek.provider.BggContract
 import com.boardgamegeek.repository.GameRepository
@@ -110,7 +109,7 @@ class PlaysViewModel(application: Application) : AndroidViewModel(application) {
             playInfo.value?.let {
                 if (it.mode == Mode.GAME) {
                     SyncService.sync(getApplication(), SyncService.FLAG_SYNC_PLAYS_UPLOAD)
-                    SyncPlaysByGameTask(getApplication(), it.id).executeAsyncTask()
+                    SyncPlaysByGameTask(getApplication(), it.id).execute()
                 } else {
                     SyncService.sync(getApplication(), SyncService.FLAG_SYNC_PLAYS)
                 }

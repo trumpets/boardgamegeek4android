@@ -15,18 +15,11 @@ class UpdateCollectionItemRatingTask(context: Context?, gameId: Int, collectionI
             values.put(Collection.RATING, rating)
             values.put(Collection.RATING_DIRTY_TIMESTAMP, System.currentTimeMillis())
             resolver.update(Collection.buildUri(internalId), values, null, null)
+            Timber.i("Updated game ID $gameId, collection ID $collectionId with rating $rating.")
             return true
         }
+        Timber.i("No rating to update for game ID $gameId, collection ID $collectionId.")
         return false
-    }
-
-    override fun onPostExecute(result: Boolean?) {
-        super.onPostExecute(result)
-        if (result == true) {
-            Timber.i("Updated game ID $gameId, collection ID $collectionId with rating $rating.")
-        } else {
-            Timber.i("No rating to update for game ID $gameId, collection ID $collectionId.")
-        }
     }
 
     data class Item(val rating: Double) {

@@ -2,7 +2,6 @@ package com.boardgamegeek.pref
 
 import android.os.Bundle
 import androidx.preference.PreferenceDialogFragmentCompat
-import com.boardgamegeek.extensions.executeAsyncTask
 import com.boardgamegeek.tasks.*
 
 class ConfirmDialogFragment : PreferenceDialogFragmentCompat() {
@@ -16,7 +15,7 @@ class ConfirmDialogFragment : PreferenceDialogFragmentCompat() {
                 "buddies" -> ResetBuddiesTask(context)
                 else -> null
             }
-            task?.executeAsyncTask()
+            task?.execute()
         }
     }
 

@@ -15,8 +15,10 @@ class UpdateCollectionItemPrivateInfoTask(context: Context?, gameId: Int, collec
         if (values.size() > 0) {
             values.put(Collection.PRIVATE_INFO_DIRTY_TIMESTAMP, System.currentTimeMillis())
             resolver.update(Collection.buildUri(internalId), values, null, null)
+            Timber.i("Updated game ID $gameId, collection ID $collectionId with private info.")
             return true
         }
+        Timber.i("No private info to update for game ID $gameId, collection ID $collectionId.")
         return false
     }
 
@@ -48,15 +50,6 @@ class UpdateCollectionItemPrivateInfoTask(context: Context?, gameId: Int, collec
     private fun putInt(values: ContentValues, columnName: String, futureValue: Int?, currentValue: Int?) {
         if (futureValue != currentValue) {
             values.put(columnName, futureValue)
-        }
-    }
-
-    override fun onPostExecute(result: Boolean?) {
-        super.onPostExecute(result)
-        if (result == true) {
-            Timber.i("Updated game ID $gameId, collection ID $collectionId with private info.")
-        } else {
-            Timber.i("No private info to update for game ID $gameId, collection ID $collectionId.")
         }
     }
 

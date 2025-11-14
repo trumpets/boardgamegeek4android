@@ -15,18 +15,11 @@ class UpdateCollectionItemTextTask(context: Context?, gameId: Int, collectionId:
             values.put(textColumn, text)
             values.put(timestampColumn, System.currentTimeMillis())
             resolver.update(Collection.buildUri(internalId), values, null, null)
+            Timber.i("Updated game ID $gameId, collection ID $collectionId with text \"$text\"")
             return true
         }
+        Timber.i("No text to update for game ID $gameId, collection ID $collectionId.")
         return false
-    }
-
-    override fun onPostExecute(result: Boolean?) {
-        super.onPostExecute(result)
-        if (result == true) {
-            Timber.i("Updated game ID $gameId, collection ID $collectionId with text \"$text\"")
-        } else {
-            Timber.i("No text to update for game ID $gameId, collection ID $collectionId.")
-        }
     }
 
     data class Item(val text: String) {

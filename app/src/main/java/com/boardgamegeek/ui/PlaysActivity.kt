@@ -13,7 +13,6 @@ import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
 import com.boardgamegeek.BggApplication
 import com.boardgamegeek.R
-import com.boardgamegeek.extensions.executeAsyncTask
 import com.boardgamegeek.extensions.setActionBarCount
 import com.boardgamegeek.tasks.sync.SyncPlaysByDateTask
 import com.boardgamegeek.ui.viewmodel.PlaysViewModel
@@ -150,6 +149,6 @@ class PlaysActivity : SimpleSinglePaneActivity(), DatePickerDialog.OnDateSetList
 
     override fun onDateSet(view: DatePicker, year: Int, month: Int, day: Int) {
         (fragment as PlaysFragment?)?.isSyncing(true)
-        SyncPlaysByDateTask(application as BggApplication, year, month, day).executeAsyncTask()
+        SyncPlaysByDateTask(application as BggApplication, year, month, day).execute()
     }
 }

@@ -229,11 +229,11 @@ class GameCollectionItemActivity : HeroActivity(),
     }
 
     override fun onPrivateInfoChanged(privateInfo: PrivateInfo) {
-        UpdateCollectionItemPrivateInfoTask(this, gameId, collectionId, internalId, privateInfo).executeAsyncTask()
+        UpdateCollectionItemPrivateInfoTask(this, gameId, collectionId, internalId, privateInfo).execute()
     }
 
     override fun onEditCollectionText(text: String, textColumn: String, timestampColumn: String) {
-        UpdateCollectionItemTextTask(this, gameId, collectionId, internalId, text, textColumn, timestampColumn).executeAsyncTask()
+        UpdateCollectionItemTextTask(this, gameId, collectionId, internalId, text, textColumn, timestampColumn).execute()
     }
 
     companion object {

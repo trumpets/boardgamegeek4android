@@ -25,8 +25,6 @@ import timber.log.Timber;
  * Deletes all data in the local database.
  */
 public class ClearDatabaseTask extends ToastingAsyncTask {
-	@Nullable private ContentResolver resolver;
-
 	public ClearDatabaseTask(Context context) {
 		super(context);
 	}
@@ -42,41 +40,36 @@ public class ClearDatabaseTask extends ToastingAsyncTask {
 	}
 
 	@Override
-	protected void onPreExecute() {
-		resolver = getContext() == null ? null : getContext().getContentResolver();
-	}
-
-	@Override
 	protected Boolean doInBackground() {
 		if (getContext() == null) return false;
+
+		final ContentResolver resolver = getContext().getContentResolver();
 
 		SyncPrefs.clearCollection(getContext());
 		SyncPrefs.clearBuddyListTimestamps(getContext());
 		SyncPrefs.clearPlaysTimestamps(getContext());
 
 		int count = 0;
-		count += delete(Games.CONTENT_URI);
-		count += delete(Artists.CONTENT_URI);
-		count += delete(Designers.CONTENT_URI);
-		count += delete(Publishers.CONTENT_URI);
-		count += delete(Categories.CONTENT_URI);
-		count += delete(Mechanics.CONTENT_URI);
-		count += delete(Buddies.CONTENT_URI);
-		count += delete(Plays.CONTENT_URI);
-		count += delete(CollectionViews.CONTENT_URI);
+		count += delete(resolver, Games.CONTENT_URI);
+		count += delete(resolver, Artists.CONTENT_URI);
+		count += delete(resolver, Designers.CONTENT_URI);
+		count += delete(resolver, Publishers.CONTENT_URI);
+		count += delete(resolver, Categories.CONTENT_URI);
+		count += delete(resolver, Mechanics.CONTENT_URI);
+		count += delete(resolver, Buddies.CONTENT_URI);
+		count += delete(resolver, Plays.CONTENT_URI);
+		count += delete(resolver, CollectionViews.CONTENT_URI);
 		Timber.i("Removed %d records", count);
 
-		if (resolver != null) {
-			count = 0;
-			count += resolver.delete(Thumbnails.CONTENT_URI, null, null);
-			count += resolver.delete(Avatars.CONTENT_URI, null, null);
-			Timber.i("Removed %d files", count);
-		}
+		count = 0;
+		count += resolver.delete(Thumbnails.CONTENT_URI, null, null);
+		count += resolver.delete(Avatars.CONTENT_URI, null, null);
+		Timber.i("Removed %d files", count);
 
 		return true;
 	}
 
-	private int delete(Uri uri) {
+	private int delete(ContentResolver resolver, Uri uri) {
 		if (resolver == null) return 0;
 		int count = resolver.delete(uri, null, null);
 		Timber.i("Removed %1$d %2$s", count, uri.getLastPathSegment());

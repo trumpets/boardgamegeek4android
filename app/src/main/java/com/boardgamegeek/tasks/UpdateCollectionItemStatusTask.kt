@@ -21,8 +21,10 @@ class UpdateCollectionItemStatusTask(context: Context?,
         if (values.size() > 0) {
             values.put(Collection.STATUS_DIRTY_TIMESTAMP, System.currentTimeMillis())
             resolver.update(Collection.buildUri(internalId), values, null, null)
+            Timber.i("Updated game ID $gameId, collection ID $collectionId with statuses \"$statuses\".")
             return true
         }
+        Timber.i("No statuses to update for game ID $gameId, collection ID $collectionId.")
         return false
     }
 
@@ -55,15 +57,6 @@ class UpdateCollectionItemStatusTask(context: Context?,
             } else {
                 values.put(Collection.STATUS_WISHLIST, 0)
             }
-        }
-    }
-
-    override fun onPostExecute(result: Boolean?) {
-        super.onPostExecute(result)
-        if (result == true) {
-            Timber.i("Updated game ID $gameId, collection ID $collectionId with statuses \"$statuses\".")
-        } else {
-            Timber.i("No statuses to update for game ID $gameId, collection ID $collectionId.")
         }
     }
 

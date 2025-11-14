@@ -1,7 +1,6 @@
 package com.boardgamegeek.ui.dialog
 
 import com.boardgamegeek.R
-import com.boardgamegeek.extensions.executeAsyncTask
 import com.boardgamegeek.provider.BggContract
 import com.boardgamegeek.tasks.UpdateCollectionItemRatingTask
 
@@ -10,7 +9,7 @@ class CollectionRatingNumberPadDialogFragment : NumberPadDialogFragment() {
         val gameId = arguments?.getInt(KEY_GAME_ID) ?: BggContract.INVALID_ID
         val collectionId = arguments?.getInt(KEY_COLLECTION_ID) ?: BggContract.INVALID_ID
         val internalId = arguments?.getLong(KEY_INTERNAL_ID) ?: BggContract.INVALID_ID.toLong()
-        UpdateCollectionItemRatingTask(context, gameId, collectionId, internalId, output).executeAsyncTask()
+        UpdateCollectionItemRatingTask(context, gameId, collectionId, internalId, output).execute()
     }
 
     companion object {

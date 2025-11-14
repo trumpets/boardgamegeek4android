@@ -161,7 +161,7 @@ class SyncCollectionUpload(application: BggApplication, service: BggService, syn
         val contentValues = ContentValues()
         addTask.appendContentValues(contentValues)
         context.contentResolver.update(Collection.buildUri(item.internalId), contentValues, null, null)
-        SyncCollectionByGameTask(application, item.gameId).executeAsyncTask()
+        SyncCollectionByGameTask(application, item.gameId).execute()
         notifySuccess(item, item.gameId * -1, R.string.sync_notification_collection_added)
     }
 
