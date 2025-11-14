@@ -24,7 +24,7 @@ public class ResetCollectionItemTask extends AsyncTask<Void, Void, Boolean> {
 
 	@NonNull
 	@Override
-	protected Boolean doInBackground(Void... params) {
+	protected Boolean doInBackground() {
 		if (context == null) return false;
 
 		ContentValues values = new ContentValues(9);
