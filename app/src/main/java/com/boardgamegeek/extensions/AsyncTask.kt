@@ -10,6 +10,11 @@ import kotlinx.coroutines.withContext
 /**
  * Execute a background task using Kotlin Coroutines.
  * This replaces the deprecated AsyncTask pattern.
+ * 
+ * Note: Uses an unmanaged CoroutineScope. For Activities/Fragments, consider using
+ * lifecycleScope or viewModelScope for automatic cancellation when lifecycle ends.
+ * This implementation matches AsyncTask behavior where tasks continue even if the
+ * calling component is destroyed.
  */
 fun launchTask(
     backgroundWork: suspend () -> Unit,
@@ -20,9 +25,16 @@ fun launchTask(
             withContext(Dispatchers.IO) {
                 backgroundWork()
             }
-            onComplete?.invoke()
         } catch (e: Exception) {
             timber.log.Timber.e(e, "Error executing background task")
+            return@launch
+        }
+        
+        // Execute onComplete callback - let exceptions propagate naturally
+        try {
+            onComplete?.invoke()
+        } catch (e: Exception) {
+            timber.log.Timber.e(e, "Error in completion callback")
         }
     }
 }
@@ -30,19 +42,32 @@ fun launchTask(
 /**
  * Execute a background task with a result using Kotlin Coroutines.
  * This replaces the deprecated AsyncTask pattern.
+ * 
+ * Note: Uses an unmanaged CoroutineScope. For Activities/Fragments, consider using
+ * lifecycleScope or viewModelScope for automatic cancellation when lifecycle ends.
+ * This implementation matches AsyncTask behavior where tasks continue even if the
+ * calling component is destroyed.
  */
 fun <T> launchTaskWithResult(
     backgroundWork: suspend () -> T,
     onComplete: (T) -> Unit
 ) {
     CoroutineScope(Dispatchers.Main).launch {
+        val result: T
         try {
-            val result = withContext(Dispatchers.IO) {
+            result = withContext(Dispatchers.IO) {
                 backgroundWork()
             }
-            onComplete(result)
         } catch (e: Exception) {
             timber.log.Timber.e(e, "Error executing background task")
+            return@launch
+        }
+        
+        // Execute onComplete callback with result - let exceptions propagate naturally
+        try {
+            onComplete(result)
+        } catch (e: Exception) {
+            timber.log.Timber.e(e, "Error in completion callback")
         }
     }
 }

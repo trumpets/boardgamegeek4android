@@ -293,9 +293,15 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
 	 */
 	private void registerNetworkCallback() {
 		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+			// Prevent re-registration if callback is already registered
+			if (networkCallback != null) {
+				Timber.w("Network callback already registered, skipping re-registration");
+				return;
+			}
+			
 			try {
 				ConnectivityManager connectivityManager = (ConnectivityManager) getContext().getSystemService(android.content.Context.CONNECTIVITY_SERVICE);
-				if (connectivityManager != null && networkCallback == null) {
+				if (connectivityManager != null) {
 					networkCallback = new ConnectivityManager.NetworkCallback() {
 						@Override
 						public void onLost(@NonNull Network network) {
