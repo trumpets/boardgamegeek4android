@@ -39,14 +39,7 @@ abstract class ShortcutTask @JvmOverloads constructor(context: Context?, thumbna
         if (Build.VERSION.SDK_INT >= VERSION_CODES.O) {
             createShortcutForOreo()
         } else {
-            val shortcutIntent = ShortcutUtils.createShortcutIntent(context, shortcutName, createIntent(), shortcutIconResId)
-            if (thumbnailUrl.isNotBlank()) {
-                fetchThumbnail()?.let {
-                    @Suppress("DEPRECATION")
-                    shortcutIntent.putExtra(Intent.EXTRA_SHORTCUT_ICON, it)
-                }
-            }
-            context.sendBroadcast(shortcutIntent)
+            Timber.w("Shortcut creation is only supported on Android 8.0 (API 26) and above")
         }
         return null
     }
