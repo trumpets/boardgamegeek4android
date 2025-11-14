@@ -8,13 +8,13 @@ import android.content.pm.ShortcutManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.drawable.Icon
-import android.os.AsyncTask
 import android.os.Build
 import android.os.Build.VERSION_CODES
 import androidx.annotation.RequiresApi
 import androidx.core.content.getSystemService
 import com.boardgamegeek.R
 import com.boardgamegeek.extensions.ensureHttpsScheme
+import com.boardgamegeek.extensions.launchTask
 import com.boardgamegeek.extensions.truncate
 import com.boardgamegeek.util.ShortcutUtils
 import com.squareup.picasso.Picasso
@@ -24,7 +24,7 @@ import java.io.FileOutputStream
 import java.io.IOException
 import java.io.OutputStream
 
-abstract class ShortcutTask @JvmOverloads constructor(context: Context?, thumbnailUrl: String? = null) : AsyncTask<Void?, Void?, Void?>() {
+abstract class ShortcutTask @JvmOverloads constructor(context: Context?, thumbnailUrl: String? = null) {
     @SuppressLint("StaticFieldLeak")
     protected val context: Context? = context?.applicationContext
     protected val thumbnailUrl: String = thumbnailUrl?.ensureHttpsScheme() ?: ""
@@ -34,14 +34,18 @@ abstract class ShortcutTask @JvmOverloads constructor(context: Context?, thumbna
 
     protected abstract val id: String?
 
-    override fun doInBackground(vararg params: Void?): Void? {
-        if (context == null) return null
-        if (Build.VERSION.SDK_INT >= VERSION_CODES.O) {
-            createShortcutForOreo()
-        } else {
-            Timber.w("Shortcut creation is only supported on Android 8.0 (API 26) and above")
-        }
-        return null
+    fun execute() {
+        launchTask(
+            backgroundWork = {
+                if (context != null) {
+                    if (Build.VERSION.SDK_INT >= VERSION_CODES.O) {
+                        createShortcutForOreo()
+                    } else {
+                        Timber.w("Shortcut creation is only supported on Android 8.0 (API 26) and above")
+                    }
+                }
+            }
+        )
     }
 
     @RequiresApi(api = VERSION_CODES.O)
@@ -67,8 +71,6 @@ abstract class ShortcutTask @JvmOverloads constructor(context: Context?, thumbna
             }
         }
     }
-
-    override fun onPostExecute(nothing: Void?) {}
 
     private fun fetchThumbnail(): Bitmap? {
         var bitmap: Bitmap? = null
