@@ -57,9 +57,17 @@ private fun Context?.link(link: Uri) {
     if (this == null) return
     val intent = Intent(Intent.ACTION_VIEW, link)
     if (this !is android.app.Activity) intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-    try {
-        startActivity(intent)
-    } catch (e: ActivityNotFoundException) {
+    
+    // Check if there's an app that can handle this intent
+    if (intent.resolveActivity(packageManager) != null) {
+        try {
+            startActivity(intent)
+        } catch (e: ActivityNotFoundException) {
+            val message = "Can't figure out how to launch $link"
+            Timber.w(message)
+            toast(message)
+        }
+    } else {
         val message = "Can't figure out how to launch $link"
         Timber.w(message)
         toast(message)
